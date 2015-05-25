@@ -129,6 +129,7 @@ public class ClientGUI extends JFrame implements ActionListener {
         if(o == logout) {
             client.sendMessage(new ChatMessage(ChatMessage.LOGOUT, ""));
             pf.setVisible(true);
+            ta.setText("You have been logged out...\n");
             return;
         }
         // if it the who is in button
@@ -198,6 +199,10 @@ public class ClientGUI extends JFrame implements ActionListener {
                 tfPort.setEditable(false);
                 // Action listener for when the user enter a message
                 tf.addActionListener(this);
+                //clear textarea on new connection
+                ta.setText("");
+                //retrive history from server
+                Helper.fetchFromFile(ta);
             }
 
         }

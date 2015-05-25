@@ -164,7 +164,7 @@ public class Server {
         // the date I connect
         String date;
 
-        // Constructore
+        // Constructor
         ClientThread(Socket socket) {
             // a unique id
             id = ++uniqueId;
@@ -215,7 +215,8 @@ public class Server {
 
                     case ChatMessage.MESSAGE:
                         broadcast(username + ": " + message);
-                        Helper.writeToTextFile(username + ": " + message);
+                        //write to server db
+                        Helper.writeToTextFile(username, message, sdf.format(new Date()));
                         break;
                     case ChatMessage.LOGOUT:
                         display(username + " disconnected with a LOGOUT message.");
