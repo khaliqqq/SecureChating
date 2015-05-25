@@ -17,6 +17,7 @@ public class Helper {
     }
 
     public static boolean isLogin(String username){
+        //flag kat sini
         return true;
     }
 
@@ -129,5 +130,54 @@ public class Helper {
                 e.printStackTrace();
             }
         }
+    }
+
+    //register user. true=success, false=failed
+    public static boolean registerDialog(){
+        JTextField username = new JTextField();
+        JTextField password = new JPasswordField();
+        Object[] message = {
+                "Username:", username,
+                "Password:", password
+        };
+
+        int option = JOptionPane.showConfirmDialog(null, message, "Register", JOptionPane.OK_CANCEL_OPTION);
+        if (option == JOptionPane.OK_OPTION) {
+            if (authenticateLogin(username.getText(),password.getText())) {
+                JOptionPane.showMessageDialog(null, "User already exist", "Warning", JOptionPane.WARNING_MESSAGE);
+                return false;
+            }if (username.getText().length() == 0 || password.getText().length() == 0){
+                JOptionPane.showMessageDialog(null, "Username and Password cant be empty", "Warning", JOptionPane.WARNING_MESSAGE);
+                return false;
+            }else {
+                if (addUserToDb(username.getText(), password.getText())){
+                    JOptionPane.showMessageDialog(null, "Registration success", "Success", JOptionPane.INFORMATION_MESSAGE);
+                    return true;
+                }else {
+                    JOptionPane.showMessageDialog(null, "Registration failed!", "Failed", JOptionPane.ERROR_MESSAGE);
+                    return false;
+                }
+            }
+        } else {
+            System.out.println("Login canceled");
+            return false;
+        }
+    }
+
+    public static boolean addUserToDb(String username, String password){
+        File inputFile = new File("users.txt");
+        BufferedWriter bw = null;
+
+        try {
+            bw = new BufferedWriter(new FileWriter(inputFile, true));
+            bw.write(System.getProperty("line.separator") + username);
+            bw.newLine();
+            bw.flush();
+            bw.close();
+            return true;
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+        }
+        return false;
     }
 }

@@ -169,12 +169,19 @@ public class AdminGUI  extends JFrame implements ActionListener {
             pf.setVisible(true);
             tf.setVisible(true);
             login.setEnabled(true);
+            label.setVisible(true);
             jlist.setVisible(false);
             logout.setEnabled(false);
             delete.setEnabled(false);
             register.setEnabled(false);
             JOptionPane.showMessageDialog(null, "You have logged out", "Information",
                     JOptionPane.INFORMATION_MESSAGE);
+        }
+
+        if(o == register){
+            if (Helper.registerDialog()){
+                jlist.setListData(Helper.fetchUser().toArray());
+            }
         }
     }
 
