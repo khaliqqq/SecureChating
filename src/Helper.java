@@ -1,11 +1,12 @@
 import javax.swing.*;
 import java.io.*;
+import java.util.ArrayList;
 
 /**
  * Created by KINGSMAN on 25-May-15.
  */
 public class Helper {
-    public static Boolean authenticateLogin(String username, String password){
+    public static boolean authenticateLogin(String username, String password){
         if (username.equals("bob")&&password.equals("123")){
             return true;
         }else if(username.equals("alice")&&password.equals("123")){
@@ -15,8 +16,12 @@ public class Helper {
         }
     }
 
+    public static boolean isLogin(String username){
+        return true;
+    }
+
     public static void writeToTextFile(String username, String message, String dateTime){
-        String allInOneString = dateTime + " " + username + " : " + message;
+        String allInOneString = dateTime + "--" + username + " : " + message;
         File log = new File("log.txt");
 
         try{
@@ -46,6 +51,83 @@ public class Helper {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    public static ArrayList fetchUser(){
+        File listOfUserFile = new File("users.txt");
+        ArrayList abc = new ArrayList();
+
+        try(BufferedReader br = new BufferedReader(new FileReader(listOfUserFile))) {
+            for(String line; (line = br.readLine()) != null; ) {
+                abc.add(line);
+            }
+            // line is not visible here.
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return abc;
+    }
+
+    public static boolean deleteUser(String username){
+
+        File inputFile = new File("users.txt");
+        File tempFile = new File("tmp.txt");
+
+        BufferedReader reader = null;
+        try {
+            reader = new BufferedReader(new FileReader(inputFile));
+            BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile));
+
+            String currentLine;
+
+            while((currentLine = reader.readLine()) != null) {
+                // trim newline when comparing with lineToRemove
+                String trimmedLine = currentLine.trim();
+                if(trimmedLine.equals(username)) continue;
+                writer.write(currentLine + System.getProperty("line.separator"));
+            }
+            writer.close();
+            reader.close();
+            copyFileUsingFileStreams(tempFile, inputFile);
+            System.out.println("success delete");
+            return true;
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        System.out.println("failed delete");
+        return false;
+    }
+
+    public static void copyFileUsingFileStreams(File source, File dest) {
+        InputStream input = null;
+        OutputStream output = null;
+        try {
+            input = new FileInputStream(source);
+            output = new FileOutputStream(dest);
+
+            byte[] buf = new byte[1024];
+            int bytesRead;
+
+            while ((bytesRead = input.read(buf)) > 0) {
+                output.write(buf, 0, bytesRead);
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                input.close();
+                output.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 }

@@ -1,14 +1,10 @@
-
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.logging.Handler;
 
-
-/*
- * The Client with its GUI
- */
-public class ClientGUI extends JFrame implements ActionListener {
-
+public class AdminGUI  extends JFrame implements ActionListener {
     private static final long serialVersionUID = 1L;
     // will first hold "Username:", later on "Enter message"
     private JLabel label;
@@ -18,21 +14,22 @@ public class ClientGUI extends JFrame implements ActionListener {
     // to hold the server address an the port number
     private JTextField tfServer, tfPort;
     // to Logout and get the list of the users
-    private JButton login, logout, whoIsIn;
+    private JButton login, logout, delete, register;
     // for the chat room
     private JTextArea ta;
     // if it is for connection
     private boolean connected;
     // the Client object
-    private Client client;
+    private Admin admin;
     // the default port number
     private int defaultPort;
     private String defaultHost;
 
-    // Constructor connection receiving a socket number
-    ClientGUI(String host, int port) {
+    private JList jlist;
 
-        super("Chat Client");
+    AdminGUI(String host, int port) {
+
+        super("Administrator");
         defaultPort = port;
         defaultHost = host;
 
@@ -67,26 +64,30 @@ public class ClientGUI extends JFrame implements ActionListener {
         add(northPanel, BorderLayout.NORTH);
 
         // The CenterPanel which is the chat room
-        ta = new JTextArea("Welcome to the Chat room\n", 80, 80);
+        jlist = new JList(Helper.fetchUser().toArray());
         JPanel centerPanel = new JPanel(new GridLayout(1,1));
-        centerPanel.add(new JScrollPane(ta));
-        ta.setEditable(false);
+        centerPanel.add(new JScrollPane(jlist));
         add(centerPanel, BorderLayout.CENTER);
+        jlist.setVisible(false);
 
         // the 3 buttons
         login = new JButton("Login");
         login.addActionListener(this);
         logout = new JButton("Logout");
         logout.addActionListener(this);
+        delete = new JButton("Delete");
+        delete.addActionListener(this);
+        register = new JButton("Register");
+        register.addActionListener(this);
         logout.setEnabled(false);		// you have to login before being able to logout
-        whoIsIn = new JButton("Who is in");
-        whoIsIn.addActionListener(this);
-        whoIsIn.setEnabled(false);		// you have to login before being able to Who is in
+        delete.setEnabled(false);
+        register.setEnabled(false);
 
         JPanel southPanel = new JPanel();
         southPanel.add(login);
         southPanel.add(logout);
-        southPanel.add(whoIsIn);
+        southPanel.add(delete);
+        southPanel.add(register);
         add(southPanel, BorderLayout.SOUTH);
 
         setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -95,57 +96,9 @@ public class ClientGUI extends JFrame implements ActionListener {
         tf.requestFocus();
 
     }
-
-    // called by the Client to append text in the TextArea
-    void append(String str) {
-        ta.append(str);
-        ta.setCaretPosition(ta.getText().length() - 1);
-    }
-    // called by the GUI is the connection failed
-    // we reset our buttons, label, textfield
-    void connectionFailed() {
-        login.setEnabled(true);
-        logout.setEnabled(false);
-        whoIsIn.setEnabled(false);
-        label.setText("Enter username and password below");
-        tf.setText("Anonymous");
-        // reset port number and host name as a construction time
-        tfPort.setText("" + defaultPort);
-        tfServer.setText(defaultHost);
-        // let the user change them
-        tfServer.setEditable(false);
-        tfPort.setEditable(false);
-        // don't react to a <CR> after the username
-        tf.removeActionListener(this);
-        connected = false;
-    }
-
-    /*
-    * Button or JTextField clicked
-    */
+    @Override
     public void actionPerformed(ActionEvent e) {
         Object o = e.getSource();
-        // if it is the Logout button
-        if(o == logout) {
-            client.sendMessage(new ChatMessage(ChatMessage.LOGOUT, ""));
-            pf.setVisible(true);
-            ta.setText("You have been logged out...\n");
-            return;
-        }
-        // if it the who is in button
-        if(o == whoIsIn) {
-            client.sendMessage(new ChatMessage(ChatMessage.WHOISIN, ""));
-            return;
-        }
-
-        // ok it is coming from the JTextField
-        if(connected) {
-            // just have to send the message
-            client.sendMessage(new ChatMessage(ChatMessage.MESSAGE, tf.getText()));
-            tf.setText("");
-            return;
-        }
-
 
         if(o == login) {
             // ok it is a connection request
@@ -176,43 +129,74 @@ public class ClientGUI extends JFrame implements ActionListener {
             }
 
             if(!Helper.authenticateLogin(username, password)){
-                ta.append("Wrong username or password\n");
+                JOptionPane.showMessageDialog(null, "Wrong username or password", "ERROR",
+                        JOptionPane.ERROR_MESSAGE);
+            }else if (!Helper.isLogin(username)){
+                JOptionPane.showMessageDialog(null, "User already login", "Warning",
+                        JOptionPane.WARNING_MESSAGE);
             }else{
-                // try creating a new Client with GUI
-                client = new Client(server, port, username, this);
-                // test if we can start the Client
-                if(!client.start())
-                    return;
-                tf.setText("");
-                pf.setText("");
-                pf.setVisible(false);
-                label.setText("Enter your message below");
-                connected = true;
-
-                // disable login button
-                login.setEnabled(false);
-                // enable the 2 buttons
+                jlist.setVisible(true);
                 logout.setEnabled(true);
-                whoIsIn.setEnabled(true);
-                // disable the Server and Port JTextField
-                tfServer.setEditable(false);
-                tfPort.setEditable(false);
-                // Action listener for when the user enter a message
-                tf.addActionListener(this);
-                //clear textarea on new connection
-                ta.setText("");
-                //retrive history from server
-                Helper.fetchFromFile(ta);
+                delete.setEnabled(true);
+                register.setEnabled(true);
+                login.setEnabled(false);
+                tf.setVisible(false);
+                pf.setVisible(false);
+                label.setVisible(false);
             }
-
         }
 
+        if(o == delete){
+            if(jlist.getSelectedIndex() != -1){
+                int response = JOptionPane.showConfirmDialog(null, "Do you want to delete?", "Confirm",
+                        JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+                if (response == JOptionPane.NO_OPTION) {
+                    System.out.println("Delete cancelled");
+                } else if (response == JOptionPane.YES_OPTION) {
+                    if (Helper.deleteUser(jlist.getSelectedValue().toString())){
+                        jlist.setListData(Helper.fetchUser().toArray());
+                    }else {
+                        System.out.println("delete failed - admingui");
+                    }
+                } else if (response == JOptionPane.CLOSED_OPTION) {
+                    System.out.println("Delete dialog closed");
+                }
+            }
+        }
+
+        if(o == logout) {
+            /*admin.sendMessage(new ChatMessage(ChatMessage.LOGOUT, ""));*/
+            pf.setVisible(true);
+            tf.setVisible(true);
+            login.setEnabled(true);
+            jlist.setVisible(false);
+            logout.setEnabled(false);
+            delete.setEnabled(false);
+            register.setEnabled(false);
+            JOptionPane.showMessageDialog(null, "You have logged out", "Information",
+                    JOptionPane.INFORMATION_MESSAGE);
+        }
+    }
+
+    void connectionFailed() {
+        login.setEnabled(true);
+        logout.setEnabled(false);
+        label.setText("Enter username and password below");
+        tf.setText("");
+        pf.setText("");
+        // reset port number and host name as a construction time
+        tfPort.setText("" + defaultPort);
+        tfServer.setText(defaultHost);
+        // let the user change them
+        tfServer.setEditable(false);
+        tfPort.setEditable(false);
+        // don't react to a <CR> after the username
+        tf.removeActionListener(this);
+        connected = false;
     }
 
     // to start the whole thing the server
     public static void main(String[] args) {
-        new ClientGUI("localhost", 1500);
+        new AdminGUI("localhost", 1500);
     }
-
 }
-
