@@ -143,6 +143,7 @@ public class AdminGUI  extends JFrame implements ActionListener {
                 tf.setVisible(false);
                 pf.setVisible(false);
                 label.setVisible(false);
+                jlist.setListData(Helper.fetchUser().toArray());
             }
         }
 

@@ -1,3 +1,4 @@
+import javax.security.auth.login.LoginException;
 import java.io.*;
 import java.net.*;
 import java.text.SimpleDateFormat;
@@ -102,14 +103,12 @@ public class Server {
         }
     }
     /*
-     * Display an event (not a message) to the console or the GUI
+     * Display an event (not a message) to the GUI
      */
     private void display(String msg) {
         String time = sdf.format(new Date()) + " " + msg;
-        if(sg == null)
-            System.out.println(time);
-        else
-            sg.appendEvent(time + "\n");
+
+        sg.appendEvent(time + "\n");
     }
     /*
      *  to broadcast a message to all Clients
@@ -177,8 +176,28 @@ public class Server {
                 sOutput = new ObjectOutputStream(socket.getOutputStream());
                 sInput  = new ObjectInputStream(socket.getInputStream());
                 // read the username
-                username = (String) sInput.readObject();
-                display(username + " just connected.");
+                ChatMessage authClient = (ChatMessage) sInput.readObject();
+                if(authClient.getType() == ChatMessage.AUTH){
+                    String tempUsername = authClient.getUsername();
+                    String tempPassword = authClient.getPassword();
+                    if (Helper.authenticateLogin(tempUsername, tempPassword)){
+                        System.out.println("login ok");
+                        username = tempUsername;
+                        display(username + " just connected.");
+
+                        cm = new ChatMessage(ChatMessage.AUTHED, "1");
+                        sOutput.writeObject(cm);
+                    }else {
+                        System.out.println("nothing match");
+                        cm = new ChatMessage(ChatMessage.AUTHED, "0");
+                        sOutput.writeObject(cm);
+                    }
+                }else {
+                    System.out.println("failed login");
+                    cm = new ChatMessage(ChatMessage.AUTHED, "0");
+                    sOutput.writeObject(cm);
+                }
+                /*display(username + " just connected.");*/
             }
             catch (IOException e) {
                 display("Exception creating new Input/output Streams: " + e);
@@ -230,6 +249,15 @@ public class Server {
                             writeMsg((i+1) + ") " + ct.username + " since " + ct.date);
                         }
                         break;
+                    case ChatMessage.FETCH_CHAT:
+                        /*try {
+                            sOutput.writeObject(new ChatMessage(ChatMessage.FETCH_CHAT, Helper.fetchFromFile()));
+                            sOutput.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }*/
+                        writeMsg(Helper.fetchFromFile());
+                        break;
                 }
             }
             // remove myself from the arrayList containing the list of the
@@ -274,6 +302,18 @@ public class Server {
                 display(e.toString());
             }
             return true;
+        }
+
+        /*
+         * To send a message to the client
+         */
+        void sendMessage(ChatMessage msg) {
+            try {
+                sOutput.writeObject(msg);
+            }
+            catch(IOException e) {
+                display("Exception writing to server: " + e);
+            }
         }
     }
 }

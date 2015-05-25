@@ -1,7 +1,10 @@
-
-import java.net.*;
-import java.io.*;
-import java.util.*;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+import java.net.Socket;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 
 /*
  * The Client that can be run both as a console or a GUI
@@ -17,28 +20,19 @@ public class Client  {
     private ClientGUI cg;
 
     // the server, the port and the username
-    private String server, username;
+    private String server, username, password;
     private int port;
 
-    /*
-     *  Constructor called by console mode
-     *  server: the server address
-     *  port: the port number
-     *  username: the username
-     */
-    Client(String server, int port, String username) {
-        // which calls the common constructor with the GUI set to null
-        this(server, port, username, null);
-    }
 
     /*
      * Constructor call when used from a GUI
      * in console mode the ClienGUI parameter is null
      */
-    Client(String server, int port, String username, ClientGUI cg) {
+    Client(String server, int port, String username, String password, ClientGUI cg) {
         this.server = server;
         this.port = port;
         this.username = username;
+        this.password = password;
         // save if we are in GUI mode or not
         this.cg = cg;
     }
@@ -47,9 +41,11 @@ public class Client  {
      * To start the dialog
      */
     public boolean start() {
+        ChatMessage cm;
         // try to connect to the server
         try {
             socket = new Socket(server, port);
+
         }
         // if it failed not much I can so
         catch(Exception ec) {
@@ -71,19 +67,52 @@ public class Client  {
             return false;
         }
 
-        // creates the Thread to listen from the server
-        new ListenFromServer().start();
+
         // Send our username to the server this is the only message that we
         // will send as a String. All other messages will be ChatMessage objects
         try
         {
-            sOutput.writeObject(username);
+            //encrypt username password------------------------------------------------------------------------------------------
+
+            /*String tempUsername = ClientEncryption.createHash256(username);
+            String tempPassword = ClientEncryption.createHash256(username);*/
+
+
+            //send authenticate request to server
+            cm = new ChatMessage(ChatMessage.AUTH, username,password);
+            sOutput.writeObject(cm);
+
+
+
+            cm = (ChatMessage)sInput.readObject();
+            String temp = cm.getMessage();
+            System.out.println("------>" + temp);
+            if(cm.getType() == ChatMessage.AUTHED){
+                if (temp.equals("1")){
+                    System.out.println("masukkkk");
+                }else {
+                    System.out.println("x masuk");
+                    return false;
+                }
+            }else {
+                System.out.println("x masuk x masuk");
+                return false;
+            }
+            System.out.println("hahahahhaha");
         }
         catch (IOException eIO) {
-            display("Exception doing login : " + eIO);
+            display("Exception during login : " + eIO);
+            disconnect();
+            return false;
+        } catch (ClassNotFoundException e) {
+            display("Exception during login : " + e);
             disconnect();
             return false;
         }
+
+        // creates the Thread to listen from the server
+        new ListenFromServer().start();
+
         // success we inform the caller that it worked
         return true;
     }
@@ -92,7 +121,7 @@ public class Client  {
      * To send a message to the console or the GUI
      */
     private void display(String msg) {
-            cg.append(msg + "\n");		// append to the ClientGUI JTextArea (or whatever)
+        cg.append(msg + "\n");		// append to the ClientGUI JTextArea (or whatever)
     }
 
     /*
@@ -141,14 +170,9 @@ public class Client  {
             while(true) {
                 try {
                     String msg = (String) sInput.readObject();
-                    // if console mode print the message and add back the prompt
-                    if(cg == null) {
-                        System.out.println(msg);
-                        System.out.print("> ");
-                    }
-                    else {
-                        cg.append(msg);
-                    }
+                    //print the message and add back the prompt
+                    cg.append(msg);
+
                 }
                 catch(IOException e) {
                     display("Server has close the connection: " + e);
@@ -162,5 +186,14 @@ public class Client  {
             }
         }
     }
+
+    public ObjectOutputStream sOut(){
+        return sOutput;
+    }
+
+    public ObjectInputStream sIn(){
+        return sInput;
+    }
+
 }
 

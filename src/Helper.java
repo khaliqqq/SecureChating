@@ -1,6 +1,7 @@
 import javax.swing.*;
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Scanner;
 
 /**
  * Created by KINGSMAN on 25-May-15.
@@ -53,6 +54,26 @@ public class Helper {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    //fetch history
+    public static String fetchFromFile(){
+        File log = new File("log.txt");
+        String fetchedString = null;
+        StringBuilder stringBuilder = new StringBuilder();
+
+        try(BufferedReader br = new BufferedReader(new FileReader(log))) {
+            for(String line; (line = br.readLine()) != null; ) {
+                stringBuilder.append(line + System.getProperty("line.separator"));
+            }
+            // line is not visible here.
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        fetchedString = stringBuilder.toString();
+        return fetchedString;
     }
 
     public static ArrayList fetchUser(){
@@ -144,6 +165,7 @@ public class Helper {
         int option = JOptionPane.showConfirmDialog(null, message, "Register", JOptionPane.OK_CANCEL_OPTION);
         if (option == JOptionPane.OK_OPTION) {
             if (authenticateLogin(username.getText(),password.getText())) {
+                //validation ni kne tukar, compare username sahaja
                 JOptionPane.showMessageDialog(null, "User already exist", "Warning", JOptionPane.WARNING_MESSAGE);
                 return false;
             }if (username.getText().length() == 0 || password.getText().length() == 0){
@@ -177,6 +199,33 @@ public class Helper {
             return true;
         } catch (IOException ioe) {
             ioe.printStackTrace();
+        }
+        return false;
+    }
+
+    public static boolean authenticateFromServer(String username, String password){
+        if (checkUSerInFile(username)){
+            return true;
+        }else {
+            return false;
+        }
+    }
+
+    public static boolean checkUSerInFile(String username){
+
+        File inputFile = new File("users.txt");
+        try {
+            Scanner scanner=new Scanner(inputFile);
+            while(scanner.hasNextLine()){
+                if(username.equals(scanner.nextLine().trim())){
+                    break;
+                }else{
+                    return false;
+                }
+            }
+            return true;
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
         }
         return false;
     }

@@ -1,7 +1,8 @@
-
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.IOException;
 
 
 /*
@@ -124,6 +125,7 @@ public class ClientGUI extends JFrame implements ActionListener {
     * Button or JTextField clicked
     */
     public void actionPerformed(ActionEvent e) {
+        ChatMessage chatMessage;
         Object o = e.getSource();
         // if it is the Logout button
         if(o == logout) {
@@ -175,35 +177,44 @@ public class ClientGUI extends JFrame implements ActionListener {
                 return;   // nothing I can do if port number is not valid
             }
 
-            if(!Helper.authenticateLogin(username, password)){
-                ta.append("Wrong username or password\n");
-            }else{
-                // try creating a new Client with GUI
-                client = new Client(server, port, username, this);
-                // test if we can start the Client
-                if(!client.start())
-                    return;
-                tf.setText("");
-                pf.setText("");
-                pf.setVisible(false);
-                label.setText("Enter your message below");
-                connected = true;
 
-                // disable login button
-                login.setEnabled(false);
-                // enable the 2 buttons
-                logout.setEnabled(true);
-                whoIsIn.setEnabled(true);
-                // disable the Server and Port JTextField
-                tfServer.setEditable(false);
-                tfPort.setEditable(false);
-                // Action listener for when the user enter a message
-                tf.addActionListener(this);
-                //clear textarea on new connection
-                ta.setText("");
-                //retrive history from server
-                Helper.fetchFromFile(ta);
+
+
+
+            // try creating a new Client with GUI
+            client = new Client(server, port, username, password, this);
+            // test if we can start the Client
+            if(!client.start())
+                return;
+            tf.setText("");
+            pf.setText("");
+            pf.setVisible(false);
+            label.setText("Enter your message below");
+            connected = true;
+
+            // disable login button
+            login.setEnabled(false);
+            // enable the 2 buttons
+            logout.setEnabled(true);
+            whoIsIn.setEnabled(true);
+            // disable the Server and Port JTextField
+            tfServer.setEditable(false);
+            tfPort.setEditable(false);
+            // Action listener for when the user enter a message
+            tf.addActionListener(this);
+            //clear textarea on new connection
+            ta.setText("");
+            //retrive history from server
+
+            try {
+                chatMessage = new ChatMessage(ChatMessage.FETCH_CHAT);
+                client.sOut().writeObject(chatMessage);
+
+
+            } catch (IOException e1) {
+                e1.printStackTrace();
             }
+
 
         }
 
